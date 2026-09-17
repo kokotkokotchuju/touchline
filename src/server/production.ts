@@ -23,6 +23,7 @@ export function requireSameOrigin(request: Request) {
   try {
     const configuredOrigins = [
       getServerEnv().SITE_URL?.trim(),
+      new URL(request.url).origin,
       process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL.trim()}`
         : undefined,
