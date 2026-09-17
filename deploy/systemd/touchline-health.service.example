@@ -1,0 +1,12 @@
+[Unit]
+Description=Touchline health monitor
+
+[Service]
+Type=oneshot
+User=touchline
+Group=touchline
+WorkingDirectory=/srv/touchline
+EnvironmentFile=/etc/touchline/touchline.env
+ExecStart=/usr/bin/npm run monitor:health
+NoNewPrivileges=true
+PrivateTmp=true

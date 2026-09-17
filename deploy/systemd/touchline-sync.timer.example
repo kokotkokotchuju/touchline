@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Touchline provider synchronization
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+Unit=touchline-sync.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,85 @@
+{
+  "name": "futbl",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "prisma generate && next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:verify": "tsx scripts/verify-database.ts",
+    "matches:verify": "node --conditions=react-server --import tsx scripts/verify-match-center.ts",
+    "competitions:verify": "node --conditions=react-server --import tsx scripts/verify-competitions.ts",
+    "check": "npm run lint && npm run typecheck && npm test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:validate": "prisma validate",
+    "db:status": "prisma migrate status",
+    "db:local": "prisma dev --name touchline --db-port 5432 --shadow-db-port 5433",
+    "redis:local": "node scripts/local-redis.mjs",
+    "infra:check": "tsx scripts/check-infrastructure.ts",
+    "db:backup": "tsx scripts/backup-database.ts",
+    "db:backup:verify": "tsx scripts/verify-backup.ts",
+    "db:backup:restore:verify": "tsx scripts/verify-backup-restore.ts",
+    "production:check": "tsx scripts/check-production-config.ts",
+    "monitor:health": "tsx scripts/monitor-health.ts",
+    "performance:check": "tsx scripts/performance-check.ts",
+    "sync:run": "node --conditions=react-server --import tsx scripts/run-sync.ts",
+    "sync:lineups": "node --conditions=react-server --import tsx scripts/run-lineup-sync.ts",
+    "sync:live": "tsx scripts/run-live-sync.ts",
+    "sync:retry": "tsx scripts/run-scheduled-sync.ts",
+    "sync:catalog:retry": "tsx scripts/run-scheduled-sync.ts catalog",
+    "sync:live:retry": "tsx scripts/run-scheduled-sync.ts live",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@upstash/redis": "^1.38.4",
+    "lucide-react": "^1.46.0",
+    "next": "16.3.5",
+    "pg": "^8.23.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "redis": "^6.2.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^24.13.4",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.5",
+    "prettier": "^3.9.6",
+    "prisma": "^7.10.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.13",
+    "typescript": "^5",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.2"
+    },
+    "prisma": {
+      "mysql2": "3.24.4"
+    }
+  }
+}

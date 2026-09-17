@@ -1,0 +1,13 @@
+[Unit]
+Description=Touchline live match synchronization
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=touchline
+Group=touchline
+WorkingDirectory=/srv/touchline
+EnvironmentFile=/etc/touchline/touchline.env
+ExecStart=/usr/bin/npm run sync:live:retry
+NoNewPrivileges=true
+PrivateTmp=true

@@ -1,0 +1,14 @@
+[Unit]
+Description=Touchline PostgreSQL backup
+
+[Service]
+Type=oneshot
+User=touchline
+Group=touchline
+WorkingDirectory=/srv/touchline
+EnvironmentFile=/etc/touchline/touchline.env
+ExecStart=/usr/bin/npm run db:backup
+ExecStartPost=/usr/bin/npm run db:backup:verify
+ExecStartPost=/usr/bin/npm run db:backup:restore:verify
+NoNewPrivileges=true
+PrivateTmp=true

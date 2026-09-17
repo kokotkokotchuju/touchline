@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Touchline live match synchronization
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15s
+Unit=touchline-live-sync.service
+
+[Install]
+WantedBy=timers.target

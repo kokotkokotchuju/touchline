@@ -1,0 +1,21 @@
+[Unit]
+Description=Touchline football platform
+After=network.target
+
+[Service]
+Type=simple
+User=touchline
+Group=touchline
+WorkingDirectory=/srv/touchline
+EnvironmentFile=/etc/touchline/touchline.env
+ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/touchline/backups
+
+[Install]
+WantedBy=multi-user.target

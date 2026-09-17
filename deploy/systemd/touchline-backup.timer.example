@@ -1,0 +1,10 @@
+[Unit]
+Description=Run daily Touchline database backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 UTC
+Persistent=true
+Unit=touchline-backup.service
+
+[Install]
+WantedBy=timers.target

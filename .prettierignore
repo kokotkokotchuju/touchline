@@ -1,0 +1,13 @@
+node_modules
+.next
+package-lock.json
+test-results
+playwright-report
+artifacts
+.local
+coverage
+AGENTS.md
+CLAUDE.md
+next-env.d.ts
+src/generated
+prisma/schema.prisma

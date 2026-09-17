@@ -1,0 +1,10 @@
+[Unit]
+Description=Monitor Touchline health
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=1min
+Unit=touchline-health.service
+
+[Install]
+WantedBy=timers.target

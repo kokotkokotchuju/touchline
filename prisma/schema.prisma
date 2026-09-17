@@ -1,0 +1,888 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CompetitionKind {
+  LEAGUE        @map("league")
+  CUP           @map("cup")
+  INTERNATIONAL @map("international")
+
+  @@map("competition_kind")
+}
+
+enum TeamKind {
+  CLUB     @map("club")
+  NATIONAL @map("national")
+
+  @@map("team_kind")
+}
+
+enum MatchStatus {
+  SCHEDULED @map("scheduled")
+  LIVE      @map("live")
+  HALFTIME  @map("halftime")
+  FINISHED  @map("finished")
+  POSTPONED @map("postponed")
+  CANCELLED @map("cancelled")
+  ABANDONED @map("abandoned")
+
+  @@map("match_status")
+}
+
+enum StageKind {
+  LEAGUE
+  GROUP
+  KNOCKOUT
+
+  @@map("stage_kind")
+}
+
+enum PlayerPosition {
+  GOALKEEPER
+  DEFENDER
+  MIDFIELDER
+  FORWARD
+
+  @@map("player_position")
+}
+
+enum ManagerRole {
+  HEAD_COACH
+  INTERIM
+  ASSISTANT
+
+  @@map("manager_role")
+}
+
+enum MatchPeriod {
+  FIRST_HALF
+  SECOND_HALF
+  EXTRA_FIRST_HALF
+  EXTRA_SECOND_HALF
+  PENALTY_SHOOTOUT
+
+  @@map("match_period")
+}
+
+enum ScorePeriod {
+  FIRST_HALF
+  REGULATION
+  EXTRA_TIME
+  PENALTY_SHOOTOUT
+
+  @@map("score_period")
+}
+
+enum DataCoverage {
+  UNKNOWN
+  NOT_AVAILABLE
+  PARTIAL
+  COMPLETE
+
+  @@map("data_coverage")
+}
+
+enum MatchEventKind {
+  GOAL
+  OWN_GOAL
+  PENALTY_GOAL
+  PENALTY_MISSED
+  YELLOW_CARD
+  SECOND_YELLOW_CARD
+  RED_CARD
+  SUBSTITUTION
+  VAR
+  PERIOD_START
+  PERIOD_END
+  OTHER
+
+  @@map("match_event_kind")
+}
+
+enum EventStatus {
+  PROVISIONAL
+  CONFIRMED
+  DISALLOWED
+  RETRACTED
+
+  @@map("event_status")
+}
+
+enum LineupStatus {
+  UNKNOWN
+  PROVISIONAL
+  CONFIRMED
+
+  @@map("lineup_status")
+}
+
+enum LineupRole {
+  STARTER
+  SUBSTITUTE
+
+  @@map("lineup_role")
+}
+
+enum FormResult {
+  W
+  D
+  L
+
+  @@map("form_result")
+}
+
+enum TableVariant {
+  OVERALL
+  HOME
+  AWAY
+
+  @@map("table_variant")
+}
+
+enum StatisticScope {
+  MATCH
+  SEASON
+
+  @@map("statistic_scope")
+}
+
+enum StatisticPeriod {
+  TOTAL
+  FIRST_HALF
+  SECOND_HALF
+  EXTRA_TIME
+  PENALTY_SHOOTOUT
+
+  @@map("statistic_period")
+}
+
+enum StatisticValueType {
+  COUNT
+  DECIMAL
+  PERCENTAGE
+
+  @@map("statistic_value_type")
+}
+
+enum StatisticAggregation {
+  SUM
+  RATIO
+  AVERAGE
+  LAST
+
+  @@map("statistic_aggregation")
+}
+
+enum TieSlot {
+  FIRST
+  SECOND
+
+  @@map("tie_slot")
+}
+
+model Country {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code         String              @unique(map: "countries_code_unique")
+  slug         String              @unique(map: "countries_slug_unique")
+  name         String
+  flagUrl      String?             @map("flag_url")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  competitions Competition[]
+  teams        Team[]
+  players      Player[]
+  managers     Manager[]
+  venues       Venue[]
+  references   ExternalReference[]
+
+  @@map("countries")
+}
+
+model User {
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email               String                   @unique
+  passwordHash        String                   @map("password_hash")
+  createdAt           DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sessions            UserSession[]
+  passwordResetTokens PasswordResetToken[]
+  favorites           UserFavorite[]
+  notificationPreference UserNotificationPreference?
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model UserSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+  @@map("user_sessions")
+}
+
+model UserFavorite {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  competitionId String?      @map("competition_id") @db.Uuid
+  teamId        String?      @map("team_id") @db.Uuid
+  playerId      String?      @map("player_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competition   Competition? @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  team          Team?        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player        Player?      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  @@unique([userId, competitionId])
+  @@unique([userId, teamId])
+  @@unique([userId, playerId])
+  @@index([userId, createdAt])
+  @@map("user_favorites")
+}
+
+model UserNotificationPreference {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  matchStarting Boolean  @default(true) @map("match_starting")
+  goal          Boolean  @default(true)
+  halftime      Boolean  @default(false)
+  fullTime      Boolean  @default(true) @map("full_time")
+  lineups       Boolean  @default(true)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("user_notification_preferences")
+}
+
+model Competition {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug       String              @unique(map: "competitions_slug_unique")
+  name       String
+  shortName  String?             @map("short_name")
+  logoUrl    String?             @map("logo_url")
+  kind       CompetitionKind
+  countryId  String?             @map("country_id") @db.Uuid
+  region     String
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  country    Country?            @relation(fields: [countryId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "competitions_country_id_countries_id_fk")
+  seasons    Season[]
+  references ExternalReference[]
+  userFavorites UserFavorite[]
+
+  @@index([countryId, kind], map: "competition_country_kind_idx")
+  @@map("competitions")
+}
+
+model Season {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competitionId     String              @map("competition_id") @db.Uuid
+  slug              String
+  name              String
+  startsOn          DateTime            @map("starts_on") @db.Date
+  endsOn            DateTime            @map("ends_on") @db.Date
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  competition       Competition         @relation(fields: [competitionId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "seasons_competition_id_competitions_id_fk")
+  teams             SeasonTeam[]
+  matches           Match[]
+  stages            CompetitionStage[]
+  standings         Standing[]
+  statisticContexts StatisticContext[]
+  references        ExternalReference[]
+
+  @@unique([competitionId, name], map: "season_competition_name")
+  @@unique([competitionId, slug], map: "season_competition_slug")
+  @@index([competitionId, startsOn], map: "season_competition_start_idx")
+  @@map("seasons")
+}
+
+model CompetitionStage {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seasonId          String              @map("season_id") @db.Uuid
+  slug              String
+  name              String
+  kind              StageKind
+  sortOrder         Int                 @map("sort_order")
+  season            Season              @relation(fields: [seasonId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  groups            CompetitionGroup[]
+  matches           Match[]
+  ties              KnockoutTie[]
+  standings         Standing[]
+  statisticContexts StatisticContext[]
+  references        ExternalReference[]
+
+  @@unique([seasonId, slug], map: "stage_season_slug")
+  @@unique([id, seasonId], map: "stage_id_season")
+  @@index([seasonId, sortOrder], map: "stage_season_order_idx")
+  @@map("competition_stages")
+}
+
+model CompetitionGroup {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  stageId           String              @map("stage_id") @db.Uuid
+  seasonId          String              @map("season_id") @db.Uuid
+  slug              String
+  name              String
+  sortOrder         Int                 @map("sort_order")
+  stage             CompetitionStage    @relation(fields: [stageId, seasonId], references: [id, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  matches           Match[]
+  standings         Standing[]
+  statisticContexts StatisticContext[]
+  references        ExternalReference[]
+
+  @@unique([stageId, slug], map: "group_stage_slug")
+  @@unique([id, stageId, seasonId], map: "group_id_stage_season")
+  @@index([stageId, sortOrder], map: "group_stage_order_idx")
+  @@map("competition_groups")
+}
+
+model Team {
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug               String                   @unique(map: "teams_slug_unique")
+  name               String
+  shortName          String                   @map("short_name")
+  kind               TeamKind
+  countryId          String?                  @map("country_id") @db.Uuid
+  venueId            String?                  @map("venue_id") @db.Uuid
+  logoUrl            String?                  @map("logo_url")
+  foundedYear        Int?                     @map("founded_year")
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  country            Country?                 @relation(fields: [countryId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "teams_country_id_countries_id_fk")
+  venue              Venue?                   @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  seasons            SeasonTeam[]
+  homeMatches        Match[]                  @relation("HomeTeam")
+  awayMatches        Match[]                  @relation("AwayTeam")
+  registrations      TeamPlayerRegistration[]
+  managerAssignments TeamManagerAssignment[]
+  events             MatchEvent[]
+  lineups            Lineup[]
+  references         ExternalReference[]
+  userFavorites      UserFavorite[]
+
+  @@index([countryId, kind], map: "team_country_kind_idx")
+  @@index([venueId], map: "team_venue_idx")
+  @@map("teams")
+}
+
+model SeasonTeam {
+  seasonId         String            @map("season_id") @db.Uuid
+  teamId           String            @map("team_id") @db.Uuid
+  season           Season            @relation(fields: [seasonId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "season_teams_season_id_seasons_id_fk")
+  team             Team              @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "season_teams_team_id_teams_id_fk")
+  homeMatches      Match[]           @relation("HomeParticipation")
+  awayMatches      Match[]           @relation("AwayParticipation")
+  firstTies        KnockoutTie[]     @relation("FirstTieTeam")
+  secondTies       KnockoutTie[]     @relation("SecondTieTeam")
+  wonTies          KnockoutTie[]     @relation("TieWinner")
+  standings        Standing[]
+  teamStatistics   TeamStatistic[]
+  playerStatistics PlayerStatistic[]
+
+  @@id([seasonId, teamId], map: "season_teams_season_id_team_id_pk")
+  @@index([teamId], map: "season_teams_team_idx")
+  @@map("season_teams")
+}
+
+model Venue {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  city       String?
+  countryId  String?             @map("country_id") @db.Uuid
+  capacity   Int?
+  latitude   Decimal?            @db.Decimal(9, 6)
+  longitude  Decimal?            @db.Decimal(9, 6)
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  country    Country?            @relation(fields: [countryId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  teams      Team[]
+  matches    Match[]
+  references ExternalReference[]
+
+  @@index([countryId, city], map: "venue_country_city_idx")
+  @@map("venues")
+}
+
+model Player {
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug             String                   @unique
+  name             String
+  displayName      String?                  @map("display_name")
+  dateOfBirth      DateTime?                @map("date_of_birth") @db.Date
+  countryId        String?                  @map("country_id") @db.Uuid
+  position         PlayerPosition?
+  portraitUrl      String?                  @map("portrait_url")
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  country          Country?                 @relation(fields: [countryId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  registrations    TeamPlayerRegistration[]
+  lineupPlayers    LineupPlayer[]
+  events           MatchEvent[]             @relation("EventPlayer")
+  assists          MatchEvent[]             @relation("EventAssist")
+  substitutionsIn  MatchEvent[]             @relation("EventPlayerIn")
+  substitutionsOut MatchEvent[]             @relation("EventPlayerOut")
+  statistics       PlayerStatistic[]
+  references       ExternalReference[]
+  userFavorites   UserFavorite[]
+
+  @@index([countryId, position], map: "player_country_position_idx")
+  @@map("players")
+}
+
+model Manager {
+  id          String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String                  @unique
+  name        String
+  dateOfBirth DateTime?               @map("date_of_birth") @db.Date
+  countryId   String?                 @map("country_id") @db.Uuid
+  portraitUrl String?                 @map("portrait_url")
+  createdAt   DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  country     Country?                @relation(fields: [countryId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  assignments TeamManagerAssignment[]
+  lineups     Lineup[]
+  events      MatchEvent[]
+  references  ExternalReference[]
+
+  @@index([countryId], map: "manager_country_idx")
+  @@map("managers")
+}
+
+model TeamPlayerRegistration {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId      String              @map("team_id") @db.Uuid
+  playerId    String              @map("player_id") @db.Uuid
+  startsOn    DateTime?           @map("starts_on") @db.Date
+  endsOn      DateTime?           @map("ends_on") @db.Date
+  shirtNumber Int?                @map("shirt_number")
+  isLoan      Boolean             @default(false) @map("is_loan")
+  team        Team                @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  player      Player              @relation(fields: [playerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  references  ExternalReference[]
+
+  // The migration uses NULLS NOT DISTINCT for this nullable identity.
+  @@unique([playerId, teamId, startsOn, endsOn], map: "registration_identity")
+  @@index([teamId, endsOn, startsOn], map: "registration_team_dates_idx")
+  @@map("team_player_registrations")
+}
+
+model TeamManagerAssignment {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId     String              @map("team_id") @db.Uuid
+  managerId  String              @map("manager_id") @db.Uuid
+  role       ManagerRole
+  startsOn   DateTime?           @map("starts_on") @db.Date
+  endsOn     DateTime?           @map("ends_on") @db.Date
+  team       Team                @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  manager    Manager             @relation(fields: [managerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  references ExternalReference[]
+
+  @@unique([managerId, teamId, role, startsOn, endsOn], map: "manager_assignment_identity")
+  @@index([teamId, endsOn, startsOn], map: "manager_assignment_team_dates_idx")
+  @@map("team_manager_assignments")
+}
+
+model KnockoutTie {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seasonId        String              @map("season_id") @db.Uuid
+  stageId         String              @map("stage_id") @db.Uuid
+  roundNumber     Int                 @map("round_number")
+  roundName       String              @map("round_name")
+  slot            Int
+  firstTeamId     String?             @map("first_team_id") @db.Uuid
+  secondTeamId    String?             @map("second_team_id") @db.Uuid
+  winnerTeamId    String?             @map("winner_team_id") @db.Uuid
+  firstAggregate  Int?                @map("first_aggregate")
+  secondAggregate Int?                @map("second_aggregate")
+  nextTieId       String?             @map("next_tie_id") @db.Uuid
+  nextSlot        TieSlot?            @map("next_slot")
+  stage           CompetitionStage    @relation(fields: [stageId, seasonId], references: [id, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  firstTeam       SeasonTeam?         @relation("FirstTieTeam", fields: [seasonId, firstTeamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction)
+  secondTeam      SeasonTeam?         @relation("SecondTieTeam", fields: [seasonId, secondTeamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction)
+  winnerTeam      SeasonTeam?         @relation("TieWinner", fields: [seasonId, winnerTeamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction)
+  nextTie         KnockoutTie?        @relation("TieProgression", fields: [nextTieId, stageId, seasonId], references: [id, stageId, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  previousTies    KnockoutTie[]       @relation("TieProgression")
+  matches         Match[]
+  references      ExternalReference[]
+
+  @@unique([stageId, roundNumber, slot], map: "tie_stage_round_slot")
+  @@unique([id, stageId, seasonId], map: "tie_id_stage_season")
+  @@unique([nextTieId, nextSlot], map: "tie_progression_slot")
+  @@index([seasonId, firstTeamId], map: "tie_first_team_idx")
+  @@index([seasonId, secondTeamId], map: "tie_second_team_idx")
+  @@index([seasonId, winnerTeamId], map: "tie_winner_idx")
+  @@map("knockout_ties")
+}
+
+model Match {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  publicId           BigInt              @unique(map: "match_public_id_unique") @default(autoincrement()) @map("public_id")
+  seasonId           String              @map("season_id") @db.Uuid
+  homeTeamId         String              @map("home_team_id") @db.Uuid
+  awayTeamId         String              @map("away_team_id") @db.Uuid
+  stageId            String?             @map("stage_id") @db.Uuid
+  groupId            String?             @map("group_id") @db.Uuid
+  tieId              String?             @map("tie_id") @db.Uuid
+  legNumber          Int?                @map("leg_number")
+  venueId            String?             @map("venue_id") @db.Uuid
+  kickoffAt          DateTime?           @map("kickoff_at") @db.Timestamptz(6)
+  status             MatchStatus         @default(SCHEDULED)
+  homeScore          Int?                @map("home_score")
+  awayScore          Int?                @map("away_score")
+  minute             Int?
+  addedMinute        Int?                @map("added_minute")
+  period             MatchPeriod?
+  round              String?
+  // Keep the original observed venue label while linking known venue identity.
+  venueName          String?             @map("venue_name")
+  eventsCoverage     DataCoverage        @default(UNKNOWN) @map("events_coverage")
+  lineupsCoverage    DataCoverage        @default(UNKNOWN) @map("lineups_coverage")
+  statisticsCoverage DataCoverage        @default(UNKNOWN) @map("statistics_coverage")
+  observedAt         DateTime?           @map("observed_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  season             Season              @relation(fields: [seasonId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "matches_season_id_seasons_id_fk")
+  homeTeam           Team                @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "matches_home_team_id_teams_id_fk")
+  awayTeam           Team                @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "matches_away_team_id_teams_id_fk")
+  homeParticipation  SeasonTeam          @relation("HomeParticipation", fields: [seasonId, homeTeamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction, map: "match_home_participation_fk")
+  awayParticipation  SeasonTeam          @relation("AwayParticipation", fields: [seasonId, awayTeamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction, map: "match_away_participation_fk")
+  stage              CompetitionStage?   @relation(fields: [stageId, seasonId], references: [id, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  group              CompetitionGroup?   @relation(fields: [groupId, stageId, seasonId], references: [id, stageId, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  tie                KnockoutTie?        @relation(fields: [tieId, stageId, seasonId], references: [id, stageId, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  venue              Venue?              @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  scores             MatchScorePeriod[]
+  events             MatchEvent[]
+  lineups            Lineup[]
+  statisticContexts  StatisticContext[]
+  references         ExternalReference[]
+
+  @@unique([id, seasonId], map: "match_id_season")
+  @@unique([tieId, legNumber], map: "match_tie_leg")
+  @@index([kickoffAt, status], map: "match_kickoff_status_idx")
+  @@index([kickoffAt, id], map: "match_date_cursor_idx")
+  @@index([status, kickoffAt], map: "match_status_kickoff_idx")
+  @@index([seasonId, kickoffAt], map: "match_season_kickoff_idx")
+  @@index([homeTeamId, kickoffAt], map: "match_home_kickoff_idx")
+  @@index([awayTeamId, kickoffAt], map: "match_away_kickoff_idx")
+  @@index([homeTeamId, awayTeamId, kickoffAt], map: "match_head_to_head_idx")
+  @@index([stageId, groupId, kickoffAt], map: "match_stage_group_date_idx")
+  @@index([venueId], map: "match_venue_idx")
+  @@map("matches")
+}
+
+model MatchScorePeriod {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchId    String              @map("match_id") @db.Uuid
+  period     ScorePeriod
+  homeScore  Int                 @map("home_score")
+  awayScore  Int                 @map("away_score")
+  match      Match               @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  references ExternalReference[]
+
+  @@unique([matchId, period], map: "match_score_period_identity")
+  @@map("match_score_periods")
+}
+
+model MatchEvent {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchId        String              @map("match_id") @db.Uuid
+  teamId         String?             @map("team_id") @db.Uuid
+  playerId       String?             @map("player_id") @db.Uuid
+  managerId      String?             @map("manager_id") @db.Uuid
+  assistPlayerId String?             @map("assist_player_id") @db.Uuid
+  playerInId     String?             @map("player_in_id") @db.Uuid
+  playerOutId    String?             @map("player_out_id") @db.Uuid
+  relatedEventId String?             @map("related_event_id") @db.Uuid
+  kind           MatchEventKind
+  status         EventStatus         @default(CONFIRMED)
+  period         MatchPeriod?
+  minute         Int?
+  addedMinute    Int?                @map("added_minute")
+  sequence       Int
+  detail         String?
+  revision       Int                 @default(1)
+  observedAt     DateTime?           @map("observed_at") @db.Timestamptz(6)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  match          Match               @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  team           Team?               @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  player         Player?             @relation("EventPlayer", fields: [playerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  manager        Manager?            @relation(fields: [managerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  assistPlayer   Player?             @relation("EventAssist", fields: [assistPlayerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  playerIn       Player?             @relation("EventPlayerIn", fields: [playerInId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  playerOut      Player?             @relation("EventPlayerOut", fields: [playerOutId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  relatedEvent   MatchEvent?         @relation("EventCorrection", fields: [relatedEventId, matchId], references: [id, matchId], onDelete: NoAction, onUpdate: NoAction)
+  corrections    MatchEvent[]        @relation("EventCorrection")
+  references     ExternalReference[]
+
+  @@unique([matchId, sequence], map: "event_match_sequence")
+  @@unique([id, matchId], map: "event_id_match")
+  @@index([matchId, teamId], map: "event_match_team_idx")
+  @@index([playerId], map: "event_player_idx")
+  @@index([assistPlayerId], map: "event_assist_idx")
+  @@index([playerInId], map: "event_player_in_idx")
+  @@index([playerOutId], map: "event_player_out_idx")
+  @@index([managerId], map: "event_manager_idx")
+  @@index([relatedEventId, matchId], map: "event_correction_idx")
+  @@map("match_events")
+}
+
+model Lineup {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchId    String              @map("match_id") @db.Uuid
+  teamId     String              @map("team_id") @db.Uuid
+  managerId  String?             @map("manager_id") @db.Uuid
+  formation  String?
+  status     LineupStatus        @default(UNKNOWN)
+  observedAt DateTime?           @map("observed_at") @db.Timestamptz(6)
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  match      Match               @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  team       Team                @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  manager    Manager?            @relation(fields: [managerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  players    LineupPlayer[]
+  references ExternalReference[]
+
+  @@unique([matchId, teamId], map: "lineup_match_team")
+  @@index([teamId], map: "lineup_team_idx")
+  @@index([managerId], map: "lineup_manager_idx")
+  @@map("lineups")
+}
+
+model LineupPlayer {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lineupId    String              @map("lineup_id") @db.Uuid
+  playerId    String              @map("player_id") @db.Uuid
+  role        LineupRole
+  position    PlayerPosition?
+  shirtNumber Int?                @map("shirt_number")
+  captain     Boolean             @default(false)
+  positionX   Decimal?            @map("position_x") @db.Decimal(5, 2)
+  positionY   Decimal?            @map("position_y") @db.Decimal(5, 2)
+  lineup      Lineup              @relation(fields: [lineupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  player      Player              @relation(fields: [playerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  references  ExternalReference[]
+
+  @@unique([lineupId, playerId], map: "lineup_player_identity")
+  @@index([playerId], map: "lineup_player_history_idx")
+  @@map("lineup_players")
+}
+
+model Standing {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seasonId         String              @map("season_id") @db.Uuid
+  stageId          String?             @map("stage_id") @db.Uuid
+  groupId          String?             @map("group_id") @db.Uuid
+  teamId           String              @map("team_id") @db.Uuid
+  variant          TableVariant        @default(OVERALL)
+  position         Int?
+  played           Int?
+  won              Int?
+  drawn            Int?
+  lost             Int?
+  goalsFor         Int?                @map("goals_for")
+  goalsAgainst     Int?                @map("goals_against")
+  goalDifference   Int?                @map("goal_difference")
+  points           Decimal?            @db.Decimal(8, 2)
+  pointsAdjustment Decimal?            @map("points_adjustment") @db.Decimal(8, 2)
+  form             FormResult[]        @default([])
+  formCoverage     DataCoverage        @default(UNKNOWN) @map("form_coverage")
+  observedAt       DateTime?           @map("observed_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  season           Season              @relation(fields: [seasonId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  stage            CompetitionStage?   @relation(fields: [stageId, seasonId], references: [id, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  group            CompetitionGroup?   @relation(fields: [groupId, stageId, seasonId], references: [id, stageId, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  participation    SeasonTeam          @relation(fields: [seasonId, teamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction)
+  references       ExternalReference[]
+
+  // NULLS NOT DISTINCT is maintained in SQL for ungrouped tables.
+  @@unique([seasonId, stageId, groupId, variant, teamId], map: "standing_identity")
+  @@index([seasonId, stageId, groupId, variant, position], map: "standing_table_position_idx")
+  @@index([teamId, seasonId], map: "standing_team_season_idx")
+  @@map("standings")
+}
+
+model StatisticDefinition {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key              String               @unique
+  name             String
+  unit             String
+  valueType        StatisticValueType   @map("value_type")
+  aggregation      StatisticAggregation
+  teamStatistics   TeamStatistic[]
+  playerStatistics PlayerStatistic[]
+
+  @@unique([id, valueType], map: "stat_definition_id_type")
+  @@map("statistic_definitions")
+}
+
+// Context identity is immutable in SQL. Create a new context when scope changes.
+model StatisticContext {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope            StatisticScope
+  seasonId         String            @map("season_id") @db.Uuid
+  matchId          String?           @map("match_id") @db.Uuid
+  stageId          String?           @map("stage_id") @db.Uuid
+  groupId          String?           @map("group_id") @db.Uuid
+  period           StatisticPeriod   @default(TOTAL)
+  split            TableVariant      @default(OVERALL)
+  season           Season            @relation(fields: [seasonId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  match            Match?            @relation(fields: [matchId, seasonId], references: [id, seasonId], onDelete: Cascade, onUpdate: NoAction)
+  stage            CompetitionStage? @relation(fields: [stageId, seasonId], references: [id, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  group            CompetitionGroup? @relation(fields: [groupId, stageId, seasonId], references: [id, stageId, seasonId], onDelete: Restrict, onUpdate: NoAction)
+  teamStatistics   TeamStatistic[]
+  playerStatistics PlayerStatistic[]
+
+  @@unique([id, seasonId], map: "stat_context_id_season")
+  @@unique([seasonId, scope, matchId, stageId, groupId, period, split], map: "stat_context_identity")
+  @@index([matchId, seasonId], map: "stat_context_match_idx")
+  @@index([stageId, groupId], map: "stat_context_stage_group_idx")
+  @@map("statistic_contexts")
+}
+
+model TeamStatistic {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contextId     String              @map("context_id") @db.Uuid
+  seasonId      String              @map("season_id") @db.Uuid
+  teamId        String              @map("team_id") @db.Uuid
+  definitionId  String              @map("definition_id") @db.Uuid
+  valueType     StatisticValueType  @map("value_type")
+  integerValue  Int?                @map("integer_value")
+  decimalValue  Decimal?            @map("decimal_value") @db.Decimal(16, 4)
+  observedAt    DateTime?           @map("observed_at") @db.Timestamptz(6)
+  updatedAt     DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  context       StatisticContext    @relation(fields: [contextId, seasonId], references: [id, seasonId], onDelete: Cascade, onUpdate: NoAction)
+  participation SeasonTeam          @relation(fields: [seasonId, teamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction)
+  definition    StatisticDefinition @relation(fields: [definitionId, valueType], references: [id, valueType], onDelete: Restrict, onUpdate: NoAction)
+  references    ExternalReference[]
+
+  @@unique([contextId, teamId, definitionId], map: "team_stat_identity")
+  @@index([teamId, seasonId], map: "team_stat_team_season_idx")
+  @@index([contextId, definitionId, integerValue], map: "team_stat_leaderboard_idx")
+  @@index([definitionId, valueType], map: "team_stat_definition_idx")
+  @@map("team_statistics")
+}
+
+model PlayerStatistic {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contextId     String              @map("context_id") @db.Uuid
+  seasonId      String              @map("season_id") @db.Uuid
+  teamId        String              @map("team_id") @db.Uuid
+  playerId      String              @map("player_id") @db.Uuid
+  definitionId  String              @map("definition_id") @db.Uuid
+  valueType     StatisticValueType  @map("value_type")
+  integerValue  Int?                @map("integer_value")
+  decimalValue  Decimal?            @map("decimal_value") @db.Decimal(16, 4)
+  observedAt    DateTime?           @map("observed_at") @db.Timestamptz(6)
+  updatedAt     DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  context       StatisticContext    @relation(fields: [contextId, seasonId], references: [id, seasonId], onDelete: Cascade, onUpdate: NoAction)
+  participation SeasonTeam          @relation(fields: [seasonId, teamId], references: [seasonId, teamId], onDelete: Restrict, onUpdate: NoAction)
+  player        Player              @relation(fields: [playerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  definition    StatisticDefinition @relation(fields: [definitionId, valueType], references: [id, valueType], onDelete: Restrict, onUpdate: NoAction)
+  references    ExternalReference[]
+
+  @@unique([contextId, playerId, teamId, definitionId], map: "player_stat_identity")
+  @@index([playerId, seasonId], map: "player_stat_player_season_idx")
+  @@index([teamId, seasonId], map: "player_stat_team_season_idx")
+  @@index([contextId, definitionId, integerValue], map: "player_stat_leaderboard_idx")
+  @@index([definitionId, valueType], map: "player_stat_definition_idx")
+  @@map("player_statistics")
+}
+
+model DataProvider {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key           String              @unique(map: "providers_key_unique")
+  name          String
+  isDevelopment Boolean             @default(false) @map("is_development")
+  references    ExternalReference[]
+
+  @@map("providers")
+}
+
+// Every mapping has exactly one real FK target; SQL adds checks and partial indexes.
+model ExternalReference {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId        String                  @map("provider_id") @db.Uuid
+  externalId        String                  @map("external_id")
+  provider          DataProvider            @relation(fields: [providerId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "external_references_provider_id_providers_id_fk")
+  countryId         String?                 @map("country_id") @db.Uuid
+  country           Country?                @relation(fields: [countryId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_country_fk")
+  competitionId     String?                 @map("competition_id") @db.Uuid
+  competition       Competition?            @relation(fields: [competitionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "external_references_competition_id_competitions_id_fk")
+  seasonId          String?                 @map("season_id") @db.Uuid
+  season            Season?                 @relation(fields: [seasonId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "external_references_season_id_seasons_id_fk")
+  teamId            String?                 @map("team_id") @db.Uuid
+  team              Team?                   @relation(fields: [teamId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "external_references_team_id_teams_id_fk")
+  playerId          String?                 @map("player_id") @db.Uuid
+  player            Player?                 @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_player_fk")
+  managerId         String?                 @map("manager_id") @db.Uuid
+  manager           Manager?                @relation(fields: [managerId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_manager_fk")
+  venueId           String?                 @map("venue_id") @db.Uuid
+  venue             Venue?                  @relation(fields: [venueId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_venue_fk")
+  matchId           String?                 @map("match_id") @db.Uuid
+  match             Match?                  @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "external_references_match_id_matches_id_fk")
+  matchEventId      String?                 @map("match_event_id") @db.Uuid
+  matchEvent        MatchEvent?             @relation(fields: [matchEventId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_match_event_fk")
+  lineupId          String?                 @map("lineup_id") @db.Uuid
+  lineup            Lineup?                 @relation(fields: [lineupId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_lineup_fk")
+  lineupPlayerId    String?                 @map("lineup_player_id") @db.Uuid
+  lineupPlayer      LineupPlayer?           @relation(fields: [lineupPlayerId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_lineup_player_fk")
+  standingId        String?                 @map("standing_id") @db.Uuid
+  standing          Standing?               @relation(fields: [standingId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_standing_fk")
+  teamStatisticId   String?                 @map("team_statistic_id") @db.Uuid
+  teamStatistic     TeamStatistic?          @relation(fields: [teamStatisticId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_team_statistic_fk")
+  playerStatisticId String?                 @map("player_statistic_id") @db.Uuid
+  playerStatistic   PlayerStatistic?        @relation(fields: [playerStatisticId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_player_statistic_fk")
+  stageId           String?                 @map("stage_id") @db.Uuid
+  stage             CompetitionStage?       @relation(fields: [stageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_stage_fk")
+  groupId           String?                 @map("group_id") @db.Uuid
+  group             CompetitionGroup?       @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_group_fk")
+  tieId             String?                 @map("tie_id") @db.Uuid
+  tie               KnockoutTie?            @relation(fields: [tieId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_tie_fk")
+  registrationId    String?                 @map("registration_id") @db.Uuid
+  registration      TeamPlayerRegistration? @relation(fields: [registrationId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_registration_fk")
+  assignmentId      String?                 @map("assignment_id") @db.Uuid
+  assignment        TeamManagerAssignment?  @relation(fields: [assignmentId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_assignment_fk")
+  scorePeriodId     String?                 @map("score_period_id") @db.Uuid
+  scorePeriod       MatchScorePeriod?       @relation(fields: [scorePeriodId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reference_score_period_fk")
+
+  @@unique([providerId, countryId], map: "reference_provider_country")
+  @@unique([providerId, competitionId], map: "reference_provider_competition")
+  @@unique([providerId, seasonId], map: "reference_provider_season")
+  @@unique([providerId, teamId], map: "reference_provider_team")
+  @@unique([providerId, playerId], map: "reference_provider_player")
+  @@unique([providerId, managerId], map: "reference_provider_manager")
+  @@unique([providerId, venueId], map: "reference_provider_venue")
+  @@unique([providerId, matchId], map: "reference_provider_match")
+  @@unique([providerId, matchEventId], map: "reference_provider_match_event")
+  @@unique([providerId, lineupId], map: "reference_provider_lineup")
+  @@unique([providerId, lineupPlayerId], map: "reference_provider_lineup_player")
+  @@unique([providerId, standingId], map: "reference_provider_standing")
+  @@unique([providerId, teamStatisticId], map: "reference_provider_team_statistic")
+  @@unique([providerId, playerStatisticId], map: "reference_provider_player_statistic")
+  @@unique([providerId, stageId], map: "reference_provider_stage")
+  @@unique([providerId, groupId], map: "reference_provider_group")
+  @@unique([providerId, tieId], map: "reference_provider_tie")
+  @@unique([providerId, registrationId], map: "reference_provider_registration")
+  @@unique([providerId, assignmentId], map: "reference_provider_assignment")
+  @@unique([providerId, scorePeriodId], map: "reference_provider_score_period")
+  @@map("external_references")
+}
