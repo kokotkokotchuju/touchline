@@ -42,7 +42,7 @@ export default async function MatchPage({ params }: Props) {
       : "https://schema.org/EventCompleted";
   const canonicalUrl = new URL(
     detail.match.href,
-    process.env.SITE_URL ?? "http://localhost:3000",
+    process.env.SITE_URL?.trim() || "http://localhost:3000",
   ).toString();
   return (
     <>

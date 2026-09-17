@@ -23,7 +23,9 @@ export function requireSameOrigin(request: Request) {
   try {
     return (
       new URL(origin).origin ===
-      new URL(getServerEnv().SITE_URL ?? "http://localhost:3000").origin
+      new URL(
+        getServerEnv().SITE_URL?.trim() || "http://localhost:3000",
+      ).origin
     );
   } catch {
     return false;

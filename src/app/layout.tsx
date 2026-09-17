@@ -4,7 +4,9 @@ import "@fontsource-variable/manrope";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.SITE_URL?.trim() || "http://localhost:3000",
+  ),
   title: {
     default: "Touchline — Every match. One place.",
     template: "%s | Touchline",

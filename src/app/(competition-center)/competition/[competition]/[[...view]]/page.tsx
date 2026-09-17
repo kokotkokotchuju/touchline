@@ -60,7 +60,7 @@ export default async function CompetitionPage(props: Props) {
   const data = await resolve(props);
   const canonicalUrl = new URL(
     `/competition/${data.competition.slug}`,
-    process.env.SITE_URL ?? "http://localhost:3000",
+    process.env.SITE_URL?.trim() || "http://localhost:3000",
   ).toString();
   return (
     <>
