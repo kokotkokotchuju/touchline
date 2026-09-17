@@ -18,8 +18,7 @@ export function requireCronSecret(request: Request) {
 
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  if (!origin || request.headers.get("sec-fetch-site") === "cross-site")
-    return false;
+  if (!origin) return false;
   try {
     const configuredOrigins = [
       getServerEnv().SITE_URL?.trim(),
@@ -33,7 +32,13 @@ export function requireSameOrigin(request: Request) {
     ]
       .filter((value): value is string => Boolean(value))
       .map((value) => new URL(value).origin);
-    return configuredOrigins.includes(new URL(origin).origin);
+    const matchesOrigin = configuredOrigins.includes(new URL(origin).origin);
+    if (
+      !process.env.VERCEL &&
+      request.headers.get("sec-fetch-site") === "cross-site"
+    )
+      return false;
+    return matchesOrigin;
   } catch {
     return false;
   }
