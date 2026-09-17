@@ -21,12 +21,18 @@ export function requireSameOrigin(request: Request) {
   if (!origin || request.headers.get("sec-fetch-site") === "cross-site")
     return false;
   try {
-    return (
-      new URL(origin).origin ===
-      new URL(
-        getServerEnv().SITE_URL?.trim() || "http://localhost:3000",
-      ).origin
-    );
+    const configuredOrigins = [
+      getServerEnv().SITE_URL?.trim(),
+      process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL.trim()}`
+        : undefined,
+      process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
+        : undefined,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => new URL(value).origin);
+    return configuredOrigins.includes(new URL(origin).origin);
   } catch {
     return false;
   }
