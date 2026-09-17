@@ -18,14 +18,22 @@ export function requireCronSecret(request: Request) {
 
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  if (!origin) return false;
+  const referer = request.headers.get("referer");
   try {
-    const forwardedHost = request.headers.get("x-forwarded-host");
-    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+    const forwardedHost = request.headers
+      .get("x-forwarded-host")
+      ?.split(",")[0]
+      .trim();
+    const forwardedProto =
+      request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
+      "https";
     const configuredOrigins = [
       getServerEnv().SITE_URL?.trim(),
       new URL(request.url).origin,
       forwardedHost ? `${forwardedProto}://${forwardedHost}` : undefined,
+      request.headers.get("host")
+        ? `${forwardedProto}://${request.headers.get("host")}`
+        : undefined,
       process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL.trim()}`
         : undefined,
@@ -35,7 +43,9 @@ export function requireSameOrigin(request: Request) {
     ]
       .filter((value): value is string => Boolean(value))
       .map((value) => new URL(value).origin);
-    const matchesOrigin = configuredOrigins.includes(new URL(origin).origin);
+    const requestOrigin = origin || (referer ? new URL(referer).origin : null);
+    if (!requestOrigin) return false;
+    const matchesOrigin = configuredOrigins.includes(new URL(requestOrigin).origin);
     if (
       !process.env.VERCEL &&
       request.headers.get("sec-fetch-site") === "cross-site"
