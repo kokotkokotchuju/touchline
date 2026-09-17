@@ -20,9 +20,12 @@ export function requireSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return false;
   try {
+    const forwardedHost = request.headers.get("x-forwarded-host");
+    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
     const configuredOrigins = [
       getServerEnv().SITE_URL?.trim(),
       new URL(request.url).origin,
+      forwardedHost ? `${forwardedProto}://${forwardedHost}` : undefined,
       process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL.trim()}`
         : undefined,
